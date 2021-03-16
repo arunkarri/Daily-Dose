@@ -7,12 +7,15 @@ import env from '../env';
 import { useAlert } from 'react-alert';
 
 const CreateBlog = () => {
-  const [rteValue, setRteValue] = useState(RichTextEditor.createEmptyValue());
+  const defaultRte = RichTextEditor.createEmptyValue();
+  const [rteValue, setRteValue] = useState(defaultRte);
   const [tags, setTags] = useState([]);
   const [tagMsg, setTagMsg] = useState(false);
   const [header, setHeader] = useState('');
   const alert = useAlert();
   let type = 'success';
+  const reactTags = useRef('');
+  const editorRef = useRef('');
 
   const [suggestions, setSuggestions] = useState([
     { id: 1, name: 'Javascript' },
@@ -30,7 +33,6 @@ const CreateBlog = () => {
     { id: 13, name: 'CSS' },
   ]);
 
-  const reactTags = useRef('');
 
   function onDelete(i) {
     tags.splice(i, 1);
@@ -47,29 +49,28 @@ const CreateBlog = () => {
   }
 
   async function createBlog() {
-
-    const body = { header, content: rteValue.toString('html'), date: new Date().toLocaleDateString(), tags : tags.reduce((acc, curr) => acc.concat(curr.name),[]) };
+    const body = { header, content: rteValue.toString('html'), date: new Date().toLocaleDateString(), tags: tags.reduce((acc, curr) => acc.concat(curr.name), []) };
     const req = await fetch(`${env}blogs/create-blog`, {
       method: 'POST',
       body: JSON.stringify(body),
       headers: {
         Authorization: store.get('token'),
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
     });
     const res = await req.json();
     if (res.statusCode !== 200) {
-        type = 'error';
-      }
-      alert.show(res.message, {
-        type: type,
-      });
-      reset();
+      type = 'error';
+    }
+    alert.show(res.message, {
+      type: type,
+    });
+    reset();
   }
 
   function reset() {
     setHeader('');
-    setRteValue(RichTextEditor.createEmptyValue());
+    setRteValue(defaultRte);
     setTags([]);
     setTagMsg(false);
   }
@@ -86,7 +87,7 @@ const CreateBlog = () => {
         <label htmlFor="blogContent">
           Your Blog Content <span className="text-danger">*</span>
         </label>
-        <RichTextEditor id="blogContent" value={rteValue} onChange={setRteValue} />
+        <RichTextEditor toolbarClassName="demo-toolbar" ref={editorRef} id="blogContent" value={rteValue} onChange={setRteValue} />
       </div>
       <div className="form-group">
         <label htmlFor="blogContent">
@@ -98,7 +99,7 @@ const CreateBlog = () => {
         </div>
       </div>
       <br />
-      <button type="button" className="btn btn-orange" onClick={createBlog}>
+      <button type="button" className="btn btn-orange" onClick={() => createBlog()} disabled={header === '' || rteValue.toString('html') === '<p><br></p>' || tags.length === 0}>
         Create
       </button>
     </>
